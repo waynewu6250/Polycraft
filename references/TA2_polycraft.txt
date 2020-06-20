@@ -1,0 +1,16 @@
+# TA2_polycraft.py
+#
+# Washington State University
+
+from TA2DQNAgent import TA2DQNAgent
+from PolycraftEnv import PolycraftHGEnv
+
+env = PolycraftHGEnv("../available_tests/hg_nonov.json")
+
+state_dims = len(env.state_names)
+num_actions = len(env.action_names)
+dqn_agent = TA2DQNAgent("polycraft_hg", state_dims, num_actions)
+
+dqn_agent.load_weights()
+dqn_agent.fit(env, nb_steps=10000, nb_max_episode_steps=1000)
+dqn_agent.save_weights()

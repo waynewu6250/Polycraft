@@ -1,0 +1,190 @@
+# agent.py
+#
+# Base DQN agent class with autoencoder-based novelty detection.
+#
+# Usage:
+#
+# TA2DQNAgent(name, state_size, num_actions): Main DQN agent.
+#
+# ae_train(): Call whenever you want to train auto-encoder on recent data and engage novelty detection.
+#   Can be called multiple times.
+#
+# update_model(state, reward): Call as you receive state/reward pairs, which increases exploration probability
+#   if novelty detected. Returns an action.
+
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Reshape
+from keras.utils import to_categorical
+
+from rl.agents.dqn import DQNAgent
+from rl.policy import EpsGreedyQPolicy
+from rl.memory import SequentialMemory
+
+import numpy as np
+from statistics import stdev
+import os.path
+
+class TA2DQNAgent():
+
+    def __init__(self, name, num_inputs, num_outputs):
+        self.agent_name = name
+        self.num_inputs  = num_inputs
+        self.num_outputs = num_outputs
+        
+        self.eps_initial = 0.4
+        self.eps_final = 0.2
+        self.eps_decrement = 0.0001
+        
+        self.ae_data = []
+        self.ae_batch_size = 32
+        self.ae_trained = False
+        self.novelty_detected = False
+        self.mse_data = [0] * 20
+        self.mse_std = 0.0
+        self.val_acc = 0.0
+        
+        self.gen_models()
+        
+    def gen_models(self):
+        self.gen_dqn_model()
+        self.gen_ae_model()
+
+    def gen_dqn_model(self):
+        input_shape = (self.num_inputs,)
+        
+        # Generate NN model
+        model = Sequential()
+        model.add(Flatten(input_shape=(1,) + input_shape))
+        model.add(Dense(32, activation='relu'))
+        model.add(Dense(32, activation='relu'))
+        model.add(Dense(32, activation='relu'))
+        model.add(Dense(self.num_outputs, activation='linear'))
+        self.nn_model = model
+        # Generate DQN agent
+        memory = SequentialMemory(limit=50000, window_length=1)
+        self.policy = EpsGreedyQPolicy(eps=self.eps_initial)
+        self.dqn_model = DQNAgent(model=self.nn_model, nb_actions=self.num_outputs, 
+                                  enable_double_dqn=True, enable_dueling_network=True,
+                                  memory=memory, nb_steps_warmup=100,
+                                  target_model_update=0.1, policy=self.policy)
+        self.dqn_model.compile(keras.optimizers.Adam(), metrics=['mse'])
+        return self.dqn_model
+    
+    def gen_ae_model(self):
+        input_shape = (self.num_inputs,)
+        model = Sequential()
+        model.add(Flatten(input_shape=(1,) + input_shape))
+        model.add(Dense(self.num_inputs, activation='relu'))
+        model.add(Dense(4, activation='relu'))
+        model.add(Dense(self.num_inputs, activation='relu'))
+        model.add(Reshape((1, self.num_inputs)))
+
+        model.compile(loss=keras.losses.MSE,
+                      optimizer=keras.optimizers.RMSprop(),
+                      metrics=['accuracy', 'mse'])
+
+        self.ae_model = model
+        return self.ae_model
+
+    def ae_train(self):
+        batch_size = self.level_0_batch_size
+        verbose = 1
+        validation_split = 0.2
+
+        # Convert to numpy arrays
+        x = np.asarray(self.level_0_data)
+        x = np.reshape(x, (-1, 1, self.num_inputs))
+
+        # Note: this needs a lot of epochs
+        # Note: tends to not work sometimes
+        attempts = 10
+        while (self.val_acc < 0.9) and (attempts > 0):
+            hist = self.ae_model.fit(x, x,
+                      batch_size=batch_size,
+                      epochs=100,
+                      verbose=verbose,
+                      validation_split=validation_split)
+            self.val_mse = hist.history['val_MSE'][-1]
+            self.mse_std = stdev(hist.history['val_MSE'])
+            self.val_acc = hist.history['val_accuracy'][-1]
+            attempts -= 1
+        self.ae_trained = True
+
+    def mse(self, x, y):
+        return np.square(np.subtract(x, y)).mean()
+
+    def update_model(self, x, perf, terminal=False):
+        # Add x to auto-encoder training data
+        self.ae_data.append(x)
+        if len(self.ae_data) > self.ae_batch_size:
+            self.ae_data.pop(0)
+        # Check for novelty; if found, then increase probability of exploration
+        if self.check_novelty(x):
+            self.policy.eps = self.eps_initial
+        else:
+            eps_new = self.policy.eps - self.eps_decrement
+            self.policy.eps = max(eps_new, self.eps_final)
+        # Back prop the reward
+        self.dqn_model.backward(perf, terminal)
+        x = np.reshape(x, self.num_inputs)
+        # Forward to get action
+        action = self.dqn_model.forward(x)
+        return action
+
+    def check_novelty(self, x):
+        # Don't check for novelty if auto-encoder not trained
+        if not self.ae_trained:
+            self.novelty_detected = False
+            return False
+        
+        # Format the sample
+        x = np.asarray(x)
+        x = np.reshape(x, (1, 1, self.num_inputs))
+
+        # Make prediction
+        pred = self.ae_model.predict(x)
+
+        # Check accuracy
+        prediction_mse = self.mse(pred, x)
+
+        # Discount small changes in data
+        if self.mse_std * 3 > abs(prediction_mse - self.val_mse):
+            self.novelty_detected = False
+            return False
+
+        # store accuracy
+        self.mse_data.append(prediction_mse)
+        self.mse_data.pop(0)
+
+        # check average accuracy to actual
+        if self.val_mse + 1.96 * self.mse_std < sum(self.mse_data) / len(self.mse_data):
+            self.novelty_detected = True
+            print('Novelty has been detected')
+            return True
+        else:
+            self.novelty_detected = False
+            return False
+
+    def load_weights(self):
+        dqn_weights_file = "ta2_dqn_" + self.agent_name + "_weights.h5f"
+        if os.path.isfile(dqn_weights_file):
+            self.dqn_model.load_weights(dqn_weights_file)
+        ae_weights_file = "ta2_ae_" + self.agent_name + "_weights.h5f"
+        if os.path.isfile(ae_weights_file):
+            self.ae_model.load_weights(ae_weights_file)
+    
+    def save_weights(self):
+        dqn_weights_file = "ta2_dqn_" + self.agent_name + "_weights.h5f"
+        self.dqn_model.save_weights(dqn_weights_file, overwrite=True)
+        ae_weights_file = "ta2_ae_" + self.agent_name + "_weights.h5f"
+        self.ae_model.save_weights(ae_weights_file, overwrite=True)
+            
+    def fit(self, env, nb_steps, nb_max_episode_steps=None):
+        self.dqn_model.fit(env, nb_steps=nb_steps, nb_max_episode_steps=nb_max_episode_steps)
+
+    def test(self, env, nb_episodes=1, nb_max_episode_steps=None):
+        self.dqn_model.test(env, nb_episodes=nb_episodes, nb_max_episode_steps=nb_max_episode_steps)

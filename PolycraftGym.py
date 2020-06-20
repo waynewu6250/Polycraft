@@ -33,27 +33,25 @@ class Gym(object):
 
     def step_command(self, command):
         self.sock.send(str.encode(command + '\n'))
-        data = self.recvall()
+        data = self.recvall(command)
         data_dict = json.loads(data)
         return data_dict
 
     def action_sample_LL(self):
         return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    def step_command_LL(self, action_space):
+    def step_command_LL(self, action_space, command):
         self.sock.send(str.encode(command + '\n'))
-        data = self.recvall()
+        data = self.recvall(command)
         data_dict = json.loads(data)
         return data_dict
 
-    def recvall(self):
+    def recvall(self, command):
         BUFF_SIZE = 4096  # 4 KiB
         data = b''
         while True:
             part = self.sock.recv(BUFF_SIZE)
-            time.sleep(0.01)
             data += part
-            
             if len(part) < BUFF_SIZE:
                 # either 0 or end of data
                 break

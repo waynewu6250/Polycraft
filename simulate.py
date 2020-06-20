@@ -108,7 +108,7 @@ def train_agent(game = 10, scene = './experiments/hgv1_1.json'):
         entropy_history.append(np.mean(ent_t))
 
         if (i+1) % 10 == 0:
-            if (i+1) % 20 == 0:
+            if (i+1) % 100 == 0:
                 rewards_history.append(batch_rewards)
                 saver.save(sess, "checkpoints/model.ckpt", global_step=i)
                 if rewards_history[-1] >= 15:
@@ -128,7 +128,7 @@ def train_agent(game = 10, scene = './experiments/hgv1_1.json'):
             plt.plot(ewma(np.array(entropy_history),span=1000), label='entropy ewma@1000')
             plt.title("Policy entropy"); plt.grid(); plt.legend()
 
-            plt.pause(0.1)     
+            plt.pause(0.01)     
     
     plt.ioff()
             

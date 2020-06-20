@@ -7,7 +7,6 @@ from gym.spaces import Discrete
 # from nes_py.wrappers import BinarySpaceToDiscreteSpaceEnv
 import PolycraftGym
 
-from scipy.misc import imresize
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -67,6 +66,8 @@ class PolycraftEnv(gym.Env):
 
         self.gym = PolycraftGym.Gym('127.0.0.1', 9000)
         self.gym.sock_connect()
+        # self.gym.send_command('START')
+        # time.sleep(1)
 
         self.img = None
         self.img_size = (height, width)
@@ -90,24 +91,31 @@ class PolycraftEnv(gym.Env):
                            'SMOOTH_MOVE E',
                            'SMOOTH_MOVE N',
                            'SMOOTH_MOVE S',
-                           'SMOOTH_TURN 45',
-                           'SMOOTH_TURN -45',
-                           'SMOOTH_TILT FORWARD',
-                           'SMOOTH_TILT DOWN'
-                           'LOOK_EAST',
-                           'LOOK_WEST',
-                           'LOOK_NORTH',
-                           'LOOK_SOUTH',
-                           ]
+                           'SMOOTH_TURN 15',
+                           'SMOOTH_TURN -15']
+        #                    'SMOOTH_TILT FORWARD',
+        #                    'SMOOTH_TILT DOWN',
+        #                    'LOOK_EAST',
+        #                    'LOOK_WEST',
+        #                    'LOOK_NORTH',
+        #                    'LOOK_SOUTH',
+        #                    ]
+        # self.action_dic = [
+        #     'move w',   # forward
+        #     'move a',   # left
+        #     'move d',   # right
+        #     'move x',   # back
+        #     'turn -15', # turn left
+        #     'turn 15',  # turn right
+        #     'place_macguffin'
+        #     ]
         self.action_space = Discrete(len(self.action_dic))
 
 
     
     def reset(self):
         """resets breakout, returns initial frames"""
-        # self.gym.send_command('START')
         # self.gym.send_command('RESET domain ../experiments/hgv1_1.json')
-
         self.framebuffer = np.zeros_like(self.framebuffer)
         self.update_buffer()
         self.time_step = 0
@@ -123,24 +131,84 @@ class PolycraftEnv(gym.Env):
         self.time_step += 1
 
         # Done
-        if data['goal']['goalAchieved']:
-            done = True
-        else:
-            done = False
-
-        # Reward handling
-        reward = 0
+        reward = -0.1
         if data['command_result']['result'] == 'SUCCESS':
-            reward += 5
+            reward += 0.5
         elif data['command_result']['result'] == 'FAIL':
             reward -= 1
+        if data['command_result']['command'] == 'SMOOTH_MOVE':
+            reward += 1
+        elif data['command_result']['command'] == 'SMOOTH_TURN':
+            reward -= 0.8
+        done = False
+        if self.have_macguffin(data):
+            reward = 50.0
+        if self.goal_achieved(data):
+            reward = 100.0
+            done = True
+        reward = reward - 0.005*data['command_result']['stepCost']
+        reward = reward - (self.time_step / 10) * 0.001
+
+        # observation
+        observation = self.generate_observation(data)
+
+        reward = self.curr_score*0.8 + reward
+        self.curr_score = reward
+
+        # Reward handling
+        # reward = 0
+        # if data['command_result']['result'] == 'SUCCESS':
+        #     reward += 5
+        # elif data['command_result']['result'] == 'FAIL':
+        #     reward -= 1
         
-        reward = reward - 0.1*data['command_result']['stepCost']
-        reward = reward - (self.time_step / 10) * 0.5
+        # reward = reward - 0.1*data['command_result']['stepCost']
+        # reward = reward - (self.time_step / 10) * 0.5
         
         #reward = self.curr_score + reward * self.reward_scale
         
         return self.framebuffer, reward, done
+    
+    def have_macguffin(self, state_dict):
+        have_macguffin = False
+        if 'inventory' in state_dict:
+            inventory = state_dict['inventory']
+            selectedItem = inventory['selectedItem']
+            item = selectedItem['item']
+            if item == 'polycraft:macguffin':
+                have_macguffin = True
+        return have_macguffin
+
+    def goal_achieved(self, state_dict):
+        goal_ach = False
+        if 'goal' in state_dict:
+            goal = state_dict['goal']
+            goal_ach = goal['goalAchieved']
+        return goal_ach
+    
+    def generate_observation(self, state_dict):
+        # Player position
+        player_pos_x = player_pos_y = player_pos_z = player_facing = 0
+        if 'player' in state_dict:
+            player = state_dict['player']
+            player_pos = player['pos']
+            player_pos_x = player_pos[0]
+            player_pos_y = player_pos[2]
+            player_pos_z = player_pos[1]
+            player_facing = self.facing_names.index(player['facing'])
+        # Destination position
+        dest_pos_x = dest_pos_y = dest_pos_z = 0
+        if 'destinationPos' in state_dict:
+            dest_pos = state_dict['destinationPos']
+            dest_pos_x = dest_pos[0]
+            dest_pos_y = dest_pos[2]
+            dest_pos_z = dest_pos[1]
+        # Player have macguffin?
+        have_macguffin = 0
+        if self.have_macguffin(state_dict):
+            have_macguffin = 1
+        return [player_pos_x, player_pos_y, player_pos_z, player_facing,
+                dest_pos_x, dest_pos_y, dest_pos_z, have_macguffin]
     
     def render(self, mode='human'):
 
@@ -151,7 +219,6 @@ class PolycraftEnv(gym.Env):
 
         plt.imshow(self.img, interpolation='none')
         plt.show()
-
     
     ### image processing ###
     
