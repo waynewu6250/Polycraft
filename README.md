@@ -1,4 +1,6 @@
 # Polycraft
 Polycraft game for AI agent in hunter-gatherer game trained with DQN
 
-Objective: Find MacGuffin, pick up and place in right position.
+Current objective: Locate to the MacGuffin in the environment, pick it up and place in right blue pad.
+Support Environment: JAVA 8 on windows.
+
