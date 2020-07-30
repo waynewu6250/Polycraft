@@ -9,11 +9,13 @@ from tqdm import tqdm
 import torch
 import os
 
+Batch_Size = 1
+Action_Size = 3
 
 env = PolycraftHGEnv(domain_file='../experiments/hgv1_1.json')
 env = wrap_func(env)
 
-agent = Agent(state_size = 8, action_size = 3, seed = 0)
+agent = Agent(state_size = 8, action_size = Action_Size, seed = 0)
 if os.path.exists('saved_model.pth'):
     print('Load pretrained model...')
     agent.qnetwork_local.load_state_dict(torch.load('saved_model.pth'))
@@ -48,9 +50,8 @@ def dqn_unity(num_episodes = 2000,  eps_start = 1, eps_decay=0.995, eps_end = 0.
         scores.append(score)
         score_window.append(score)
         eps = max(eps_end, eps_decay*eps) # decrease epsilon
-        print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)), end="")
         
-        if i_episode % 100 == 0:
+        if i_episode % 10 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))
             torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
         if np.mean(score_window)>=99.5:

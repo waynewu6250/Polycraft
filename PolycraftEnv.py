@@ -58,12 +58,14 @@ class PolycraftHGEnv:
     def step(self, action):
         # action assumed to be an integer index into action_names list
         state_dict, screen = self.process_action(action)
+
         screen = screen['screen']['img']
-        observation = self.generate_observation(state_dict)
         reward = self.get_reward(state_dict)
         done = self.goal_achieved(state_dict)
         info = {}
+        
         # print("\nACTION: " + self.action_names[action])
+        # observation = self.generate_observation(state_dict)
         # self.print_observation(observation)
         # print("REWARD = %.2f" % reward)
         return screen, reward, done, info
@@ -72,7 +74,8 @@ class PolycraftHGEnv:
         command = "reset domain " + self.domain_file
         self.previous_score = 0.0
         state_dict = self.process_command(command)
-        observation = self.generate_observation(state_dict)
+        # Here we don't have valid observation
+        # observation = self.generate_observation(state_dict)
         screen = self.process_command('SENSE_SCREEN')
         screen = screen['screen']['img']
         time.sleep(2)

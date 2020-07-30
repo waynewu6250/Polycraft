@@ -12,7 +12,7 @@ class MaxAndSkipEnv:
     def __init__(self, env=None, skip=4):
         """Return only every `skip`-th frame"""
         self.env = env
-        self._obs_buffer = deque(maxlen=2)
+        self._obs_buffer = [] #deque(maxlen=2)
         self._skip       = skip
 
     def step(self, action):
@@ -26,9 +26,9 @@ class MaxAndSkipEnv:
                 break
 
         # 選倒數兩個frame中較大的那一個，但我不太清楚為何要這樣?
-        max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        # max_frame = np.max(np.stack(self._obs_buffer), axis=0)
 
-        return max_frame, total_reward, done, info
+        return self._obs_buffer[-1], total_reward, done, info
 
     def reset(self):
         # 清掉buffer，並掛上初始obs當作deque的初始狀態
