@@ -59,7 +59,7 @@ def dqn_unity(num_episodes = 2000,  eps_start = 1, eps_decay=0.85, eps_end = 0.0
         eps = max(eps_end, eps_decay*eps) # decrease epsilon
         
         if i_episode % 1 == 0:
-            print('\rAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))
+            print('\rAverage Score: {:.2f}'.format(np.mean(score_window)))
             torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
         if np.mean(score_window)>=99.5:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))

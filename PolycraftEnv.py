@@ -95,7 +95,7 @@ class PolycraftHGEnv:
         action = self.action_names[action_index]
         dict = self.process_command(action)
         time.sleep(0.01)
-        dict = self.process_command('sense_all')
+        #dict = self.process_command('sense_all')
         screen = self.process_command('SENSE_SCREEN')
         #time.sleep(0.25)
         return dict, screen
