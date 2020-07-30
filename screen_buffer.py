@@ -40,8 +40,6 @@ class ScreenReplayBuffer(object):
         # 先確認大小足夠能抽樣才進行抽樣
         assert self.can_sample(batch_size)
         idxes = sample_n_unique(lambda: random.randint(0, self.num_in_buffer - 2), batch_size)
-        print(idxes)
-        print(self.action)
         return self._encode_sample(idxes)
     
     def encode_recent_observation(self):   # return the most recent `frame_history_len` frames.

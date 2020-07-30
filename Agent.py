@@ -11,7 +11,7 @@ from screen_buffer import ScreenReplayBuffer
 from model import QNetwork
 
 Buffer_Size = int(1e5)  # replay buffer size
-Batch_Size = 1         # minibatch size
+Batch_Size = 32         # minibatch size
 gamma = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate 
@@ -50,7 +50,7 @@ class Agent():
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
       
-    def select_act(self, state, eps=0.):
+    def select_act(self, state, eps=0., is_random=False):
         """selects action based on state and epsilon
         """
         self.last_idx = self.memory.store_frame(state)
@@ -61,6 +61,10 @@ class Agent():
         # unsqueeze(0) adds a singleton dimension at 0 positon
         # useful because the states are in batches     
         # to(device) moves the tensor to the device memory, cpu or cuda
+
+        if is_random:
+            # don't update the network
+            return np.random.randint(self.action_size)        
         
         ## put network in eval mode
         self.qnetwork_local.eval()
@@ -117,9 +121,11 @@ class Agent():
         self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
         
         
-    def step(self,state,action,reward,next_state,done):
+    def step(self,state,action,reward,next_state,done,is_random):
         
         self.memory.store_effect(self.last_idx, action, reward, done) # 將新的資訊存入buffer中
+        if is_random:
+            return
         
         self.t_step = (self.t_step+1) % UPDATE_EVERY # self.t_step will increase by 1 after every step() call
                                                     # that means every time step
