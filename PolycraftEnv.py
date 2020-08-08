@@ -23,6 +23,7 @@ class PolycraftHGEnv:
     def __init__(self, domain_file):
         self.domain_file = domain_file
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(10)
         self.sock.connect((HOST, PORT))
         self.process_command('start')
         time.sleep(1)
@@ -32,9 +33,9 @@ class PolycraftHGEnv:
             # 'move a',   # left
             # 'move d',   # right
             # 'move x',   # back
-            'turn -15', # turn left
-            'turn 15']  # turn right
-            #'place_macguffin'
+            'turn -45', # turn left
+            'turn 45']  # turn right
+            #'place_macguffin+SMOOTH_TILT FORWARD']
             #]
     
         self.facing_names = ['NORTH', 'SOUTH', 'EAST', 'WEST']
@@ -52,15 +53,34 @@ class PolycraftHGEnv:
 
         self.action_space = spaces.Discrete(len(self.action_names))
         self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 1))
+
+        self.prev_screen = None
     
     # ----- Required methods of environment
+
+    def reset(self):
+        command = "reset domain " + self.domain_file
+        state_dict = self.process_command(command)
+        # Here we don't have valid observation
+        # observation = self.generate_observation(state_dict)
+        screen = self.process_command('SENSE_SCREEN')
+        if 'screen' not in screen and self.prev_screen:
+            screen = self.prev_screen
+        else:
+            self.prev_screen = screen
+        screen = screen['screen']['img']
+        time.sleep(2)
+        return screen
         
     def step(self, action):
         # action assumed to be an integer index into action_names list
-        state_dict, screen = self.process_action(action)
-
+        act_dict, state_dict, screen = self.process_action(action)
+        if 'screen' not in screen and self.prev_screen:
+            screen = self.prev_screen
+        else:
+            self.prev_screen = screen
         screen = screen['screen']['img']
-        reward = self.get_reward(state_dict)
+        reward = self.get_reward(state_dict, act_dict)
         done = self.goal_achieved(state_dict)
         info = {}
         
@@ -69,17 +89,6 @@ class PolycraftHGEnv:
         # self.print_observation(observation)
         # print("REWARD = %.2f" % reward)
         return screen, reward, done, info
-    
-    def reset(self):
-        command = "reset domain " + self.domain_file
-        self.previous_score = 0.0
-        state_dict = self.process_command(command)
-        # Here we don't have valid observation
-        # observation = self.generate_observation(state_dict)
-        screen = self.process_command('SENSE_SCREEN')
-        screen = screen['screen']['img']
-        time.sleep(2)
-        return screen
     
     def render(self, mode='human', close=False):
         # polycraft rendering handled externally
@@ -93,19 +102,29 @@ class PolycraftHGEnv:
     
     def process_action(self, action_index):
         action = self.action_names[action_index]
-        dict = self.process_command(action)
-        time.sleep(0.01)
-        #dict = self.process_command('sense_all')
+        # if action_index == 3:
+        #     first = action.split('+')[0]
+        #     second = action.split('+')[1]
+        #     act_dict = self.process_command(first)
+        #     act_dict = self.process_command(second)
+        # else:
+        #     act_dict = self.process_command(action)
+        act_dict = self.process_command(action)
+        time.sleep(0.001)
+        dict = self.process_command('sense_all')
         screen = self.process_command('SENSE_SCREEN')
         #time.sleep(0.25)
-        return dict, screen
+        return act_dict, dict, screen
 
     def process_command(self, command):
         self.sock.send(str.encode(command + '\n'))
         BUFF_SIZE = 4096  # 4 KiB
         data = b''
         while True:
-            part = self.sock.recv(BUFF_SIZE)
+            try:
+                part = self.sock.recv(BUFF_SIZE)
+            except:
+                part = b''
             data += part
             if len(part) < BUFF_SIZE:
                  # either 0 or end of data
@@ -166,11 +185,17 @@ class PolycraftHGEnv:
         #     goal_ach = goal['goalAchieved']
         return goal_ach
 
-    def get_reward(self, state_dict):
-        reward = -0.01
+    def get_reward(self, state_dict, act_dict):
+        reward = 0.0
+        if act_dict['command_result']['command'] == 'turn':
+            reward -= 0.2 #-0.2
+        if act_dict['command_result']['result'] == 'SUCCESS':
+            reward += 0.3 #+0.3
+        else:
+            reward -= 0.2 #-0.2
         if self.have_macguffin(state_dict):
-            reward = 50.0
+            reward = 50.0 #50
         if self.goal_achieved(state_dict):
-            reward = 100.0
+            reward = 100.0 #100
         return reward
 

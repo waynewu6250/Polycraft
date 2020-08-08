@@ -1,51 +1,45 @@
-# run this file to see how my trained models work.
+# run this file to see how trained models work.
 
-
-from unityagents import UnityEnvironment
-import numpy as np
+from PolycraftEnv import PolycraftHGEnv
+from wrapper import wrap_func
+from model import QNetwork
+from Agent import Agent
 import numpy as np
 import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from pandas import DataFrame
 from collections import namedtuple,deque
 
+Batch_Size = 32
+Action_Size = 3
 
-# please write the path of Banana.exe here)
-env = UnityEnvironment(file_name="Banana_Windows_x86_64/Banana_Windows_x86_64/Banana.exe")
+env = PolycraftHGEnv(domain_file='../experiments/hgv1_1.json')
+env = wrap_func(env)
 
-# get the default brain
-brain_name = env.brain_names[0]
-brain = env.brains[brain_name]
+agent = Agent(state_size = 8, action_size = Action_Size, seed = 0)
 
-
-
-from model import QNetwork
-from bufer import Replay_Buffer
-from Agent import Agent
-agent = Agent(state_size = 37, action_size = 4, seed = 0)
-
-
-agent.qnetwork_local.load_state_dict(torch.load('Banana_saved_model.pth'))
+agent.qnetwork_local.load_state_dict(torch.load('saved_model_BEST2.pth'))
 
 eps = 0.
 scores = []
 for i in range(5):
 
-    env_info = env.reset(train_mode=True)[brain_name] # reset the environment
-    state = env_info.vector_observations[0]            # get the current state
+    state = env.reset()                                # reset the environment
+    
     score = 0                                          # initialize the score
+    counter = 0
     while True:
-        action = agent.select_act(state,eps)           # select an action
-               
-        env_info = env.step(action)[brain_name]        # send the action to the environment
-        next_state = env_info.vector_observations[0]   # get the next state
-        reward = env_info.rewards[0]                   # get the reward
-        done = env_info.local_done[0]                  # see if episode has finished
+        action = agent.select_act(state,eps,False)     # select an action
+        next_state, reward, done, info = env.step(action)   # get the next state
         score += reward                                # update the score
         state = next_state                             # roll over the state to next time step
-        if done:                                       # exit loop if episode finished
+        counter += 1
+        if done or counter == 250:                     # exit loop if episode finished
             break
     scores.append(score)
     #print("Score: {}".format(score))
