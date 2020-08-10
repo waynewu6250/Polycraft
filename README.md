@@ -1,6 +1,6 @@
 # Polycraft
 Train an AI agent to play hunter-gatherer game in Polycraft simulation environment, based on Minecraft. <br>
-<Train with DQN>
+\<Train with DQN\>
 
 
 **Current Objective**: Find MacGuffin in the gaming environment, pick it up and place in right blue pad. <br>
