@@ -1,5 +1,7 @@
 # Polycraft
-A Polycraft game simulation based on Minecraft environment for AI agent in hunter-gatherer game, trained with DQN.
+Train an AI agent to play hunter-gatherer game in Polycraft simulation environment, based on Minecraft. <br>
+<Train with DQN>
+
 
 **Current Objective**: Find MacGuffin in the gaming environment, pick it up and place in right blue pad. <br>
 **Support Environment**: JAVA 8 on windows 10. Python 3.6, pytorch
