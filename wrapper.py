@@ -69,6 +69,6 @@ class ProcessFrame:
         return x_t.astype(np.uint8)
 
 def wrap_func(env):
-    env = MaxAndSkipEnv(env, skip=4)
+    #env = MaxAndSkipEnv(env, skip=4)
     env = ProcessFrame(env)
     return env

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import random
+import pickle
 
 def sample_n_unique(sampling_f, n):
     res = []
@@ -12,17 +13,26 @@ def sample_n_unique(sampling_f, n):
 
 
 class ScreenReplayBuffer(object):
-    def __init__(self, size, frame_history_len):  # size 代表 replay buffer size
+    def __init__(self, size, frame_history_len, opt):  # size 代表 replay buffer size
         self.size = size
         self.frame_history_len = frame_history_len
         
-        self.next_idx      = 0
-        self.num_in_buffer = 0
-        
-        self.obs    = None
-        self.action = None
-        self.reward = None
-        self.done   = None
+        if opt.is_recover:
+            with open(opt.frame_path, 'rb') as f:
+                old_buffer = pickle.load(f)
+            self.obs = old_buffer['obs']
+            self.action = old_buffer['action']
+            self.reward = old_buffer['reward']
+            self.done = old_buffer['done']
+            self.next_idx = old_buffer['next_idx']
+            self.num_in_buffer = old_buffer['num_in_buffer']
+        else:
+            self.next_idx      = 0
+            self.num_in_buffer = 0
+            self.obs    = None
+            self.action = None
+            self.reward = None
+            self.done   = None
     
     def can_sample(self, batch_size):   # return True or False
         return batch_size + 1 <= self.num_in_buffer
@@ -97,3 +107,13 @@ class ScreenReplayBuffer(object):
         self.action[idx] = action
         self.reward[idx] = reward
         self.done[idx]   = done
+    
+    def store_buffer(self):
+        old_buffer = {'obs': self.obs,
+                      'action': self.action,
+                      'reward': self.reward,
+                      'done': self.done,
+                      'num_in_buffer': self.num_in_buffer,
+                      'next_idx': self.next_idx}
+        with open('saved_frames.pkl', 'wb') as f:
+            pickle.dump(old_buffer, f)

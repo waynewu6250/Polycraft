@@ -14,33 +14,45 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 from collections import namedtuple,deque
+from config import Config
 
-Batch_Size = 32
-Action_Size = 3
+def run(opt):
 
-env = PolycraftHGEnv(domain_file='../experiments/hgv1_1.json')
-env = wrap_func(env)
+    env = PolycraftHGEnv(domain_file=opt.domain_file, opt=opt)
+    env = wrap_func(env)
 
-agent = Agent(state_size = 8, action_size = Action_Size, seed = 0)
-
-agent.qnetwork_local.load_state_dict(torch.load('saved_model_BEST2.pth'))
-
-eps = 0.
-scores = []
-for i in range(5):
-
-    state = env.reset()                                # reset the environment
+    scores = []
+    eps = 0.
+    state = env.reset()
+    counter = 0                                 
     
-    score = 0                                          # initialize the score
-    counter = 0
-    while True:
-        action = agent.select_act(state,eps,False)     # select an action
-        next_state, reward, done, info = env.step(action)   # get the next state
-        score += reward                                # update the score
-        state = next_state                             # roll over the state to next time step
-        counter += 1
-        if done or counter == 250:                     # exit loop if episode finished
-            break
-    scores.append(score)
-    #print("Score: {}".format(score))
-print('Avg score:',np.mean(scores))
+    for i_episode in range(5):
+        
+        print()
+
+        score = 0                                          # initialize the score
+        agent = Agent(state_size = opt.state_size, action_size = opt.action_Size, seed = 0, opt=opt)
+        
+        while True:
+            action = agent.select_act(state,eps)           # select an action
+            next_state, reward, done, info = env.step(action)   # get the next state
+            loss = agent.step(state,action,reward,next_state,done)
+            score += reward                                # update the score
+            state = next_state                             # roll over the state to next time step
+            counter += 1
+            if done or counter == 250:                     # exit loop if episode finished
+                state = env.reset()
+                break
+        scores.append(score)
+        #print("Score: {}".format(score))
+    print('Avg score:',np.mean(scores))
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--mode', default='all', dest='mode')
+    args = parser.parse_args()
+
+    opt = Config(args)
+    run(opt)
+    

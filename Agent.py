@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,21 +11,12 @@ from collections import namedtuple,deque
 from screen_buffer import ScreenReplayBuffer
 from model import QNetwork
 
-Buffer_Size = int(1e5)  # replay buffer size
-Batch_Size = 32         # minibatch size
-gamma = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
-LR = 5e-4               # learning rate 
-UPDATE_EVERY = 4        # how often to update the network
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
 
 class Agent():
     
     
-    def __init__(self, state_size, action_size, seed):
+    def __init__(self, state_size, action_size, seed, opt):
         """Initialize an Agent object.
         
         Params
@@ -39,18 +31,28 @@ class Agent():
         ### random.seed(seed) generates sequence of random numbers by performing some operation on initial value.
         #If same initial value is used, it will generate the same sequence of random numbers
         self.seed = random.seed(seed)
+        self.opt = opt
 
         # Q-Network
         self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
+        if os.path.exists(opt.model_path):
+            print('Load pretrained model...')
+            self.qnetwork_local.load_state_dict(torch.load(opt.model_path))
+            # sanity check
+            for param in self.qnetwork_local.parameters():
+                print(param[0][0][0])
+                break
+        else:
+            print('Train from scratch...')
         self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=self.opt.LR)
 
         # Replay memory
-        self.memory = ScreenReplayBuffer(Buffer_Size, 4)
+        self.memory = ScreenReplayBuffer(self.opt.buffer_size, 4, opt)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
       
-    def select_act(self, state, eps=0., is_random=False):
+    def select_act(self, state, eps=0.):
         """selects action based on state and epsilon
         """
         self.last_idx = self.memory.store_frame(state)
@@ -62,9 +64,13 @@ class Agent():
         # useful because the states are in batches     
         # to(device) moves the tensor to the device memory, cpu or cuda
 
-        if is_random:
+        if not self.memory.can_sample(self.opt.batch_size):
             # don't update the network
-            return np.random.randint(self.action_size)        
+            print('random sampling...')
+            return np.random.randint(self.action_size)
+        elif not self.opt.is_recover:
+            self.memory.store_buffer()
+            self.opt.is_recover = True
         
         ## put network in eval mode
         self.qnetwork_local.eval()
@@ -101,7 +107,7 @@ class Agent():
         # the new tensor is (64,), we then add a singleton dimensin to it with unsqueeze
         # Q_targets_next is the max reward of the four actons for each of the 64 states
         
-        Q_target = rewards + (gamma*Q_next_states*(1-dones))
+        Q_target = rewards + (self.opt.gamma*Q_next_states*(1-dones))
         Q_expected = self.qnetwork_local(states).gather(1,actions)
         
         #gather rearranges values in the dimension (1 here) of the input tensor (64,4), 
@@ -119,23 +125,23 @@ class Agent():
         #Q_expected.backward(d_error.data)
         self.optimizer.step()
         
-        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
+        self.soft_update(self.qnetwork_local, self.qnetwork_target, self.opt.TAU)
 
         return d_error
         
         
-    def step(self,state,action,reward,next_state,done,is_random):
+    def step(self,state,action,reward,next_state,done):
         
         self.memory.store_effect(self.last_idx, action, reward, done) # 將新的資訊存入buffer中
-        if is_random:
+        if not self.memory.can_sample(self.opt.batch_size):
             return
         
-        self.t_step = (self.t_step+1) % UPDATE_EVERY # self.t_step will increase by 1 after every step() call
+        self.t_step = (self.t_step+1) % self.opt.UPDATE_EVERY # self.t_step will increase by 1 after every step() call
                                                     # that means every time step
         d_error = None
         if self.t_step == 0:
-            experiences = self.memory.sample(Batch_Size)
-            d_error = self.learn(experiences, gamma)
+            experiences = self.memory.sample(self.opt.batch_size)
+            d_error = self.learn(experiences, self.opt.gamma)
         return d_error
     
     def soft_update(self, local_model, target_model, TAU):
