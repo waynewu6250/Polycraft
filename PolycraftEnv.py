@@ -2,7 +2,7 @@
 #
 # Defines OpenAI Gym environments for Polycraft.
 #
-# Washington State University
+# Georgia Tech
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -213,11 +213,11 @@ class PolycraftHGEnv:
                     self.get_macguffin = True
                     reward += 100.0
                 else:
-                    reward += 5.0
+                    reward += 0.1
             else:
                 if self.get_macguffin:
-                    reward -= 100.0
-                self.get_macguffin = False
+                    reward -= 150.0
+                    self.get_macguffin = False
             if self.goal_achieved(state_dict):
                 reward += 1000.0
         

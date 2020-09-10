@@ -29,9 +29,9 @@ class Config:
 
         # path
         #prefix = ''
-        prefix = 'BEST'
-        self.model_path = 'saved_model_{}.pth'.format(prefix)
-        self.frame_path = 'saved_frames_{}.pkl'.format(prefix)
+        prefix = '_BEST'
+        self.model_path = 'saved_model{}.pth'.format(prefix)
+        self.frame_path = 'saved_frames{}.pkl'.format(prefix)
 
         self.is_recover = True       # whether to recover old buffer
 
