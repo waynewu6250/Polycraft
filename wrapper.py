@@ -47,8 +47,8 @@ class ProcessFrame:
         obs, reward, done, info = self.env.step(action)
         return self._process_frame(obs), reward, done, info
 
-    def reset(self):
-        return self._process_frame(self.env.reset())
+    def reset(self, domain_file):
+        return self._process_frame(self.env.reset(domain_file))
     
     def _process_frame(self, frame):
         img_array = np.array(frame, dtype=np.uint32)

@@ -20,8 +20,7 @@ PORT = 9000
 
 class PolycraftHGEnv:
     
-    def __init__(self, domain_file, opt):
-        self.domain_file = domain_file
+    def __init__(self, opt):
         self.opt = opt
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(10)
@@ -67,8 +66,8 @@ class PolycraftHGEnv:
     
     # ----- Required methods of environment
 
-    def reset(self):
-        command = "reset domain " + self.domain_file
+    def reset(self, domain_file):
+        command = "reset domain " + domain_file
         state_dict = self.process_command(command)
         # Here we don't have valid observation
         # observation = self.generate_observation(state_dict)
@@ -191,9 +190,12 @@ class PolycraftHGEnv:
     def goal_achieved(self, state_dict):
         if self.opt.mode == 'all':
             goal_ach = False
-            if 'goal' in state_dict:
-                goal = state_dict['goal']
-                goal_ach = goal['goalAchieved']
+            if 'macGuffinPos' in state_dict:
+                goal = state_dict['macGuffinPos']
+                mac_x = goal[0]
+                mac_y = goal[2]
+                mac_z = goal[1]
+                goal_ach = (mac_x == 10 and mac_z == 4 and mac_y == 12)
         else:
             goal_ach = self.have_macguffin(state_dict)
         return goal_ach
@@ -222,17 +224,27 @@ class PolycraftHGEnv:
                 reward += 1000.0
         
         else:
-            reward = 0.0
+            # move: -0.3
+            # turn: -0.5
+            # fail: -1.0
+            # goal: 100
+            reward = -0.1 #0.0
+            if act_dict['command_result']['result'] == 'SUCCESS':
+                reward -= 0.2
+            else:
+                reward -= 0.9
             if act_dict['command_result']['command'] == 'turn':
                 reward -= 0.2
-            if act_dict['command_result']['result'] == 'SUCCESS':
-                reward += 0.3
-            else:
-                reward -= 0.2
+            # if act_dict['command_result']['command'] == 'turn':
+            #     reward -= 0.2
+            # if act_dict['command_result']['result'] == 'SUCCESS':
+            #     reward += 0.3
+            # else:
+            #     reward -= 0.2
             if self.have_macguffin(state_dict):
                 reward = 50.0
             if self.goal_achieved(state_dict):
-                reward = 100.0
+                reward = 200.0 #100
         
 
         return reward

@@ -4,6 +4,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 import torch
+import json
 import os
 
 from PolycraftEnv import PolycraftHGEnv
@@ -12,10 +13,28 @@ from model import QNetwork
 from Agent import Agent
 from config import Config
 
+def randomize(domain_file):
+
+    domain_file = domain_file[3:]
+    with open(domain_file, 'r') as f:
+        setting = json.load(f)
+    
+    location = [7, 10, 20, 23] #[1, 3, 4, 6, 7, 10, 20, 26, 30]
+    num = [int(i) for i in np.random.choice(location, 6)]
+    angle = int(np.random.choice([0, 90, 180, 270], 1))
+    setting['features'][0]['pos'] = [num[0], 4, num[1]]
+    setting['features'][0]['lookDir'] = [0, angle, 0]
+    setting['features'][2]['pos'] = [num[2], 4, num[3]]
+    setting['features'][4]['blockList'][0]['blockPos'] = [num[4], 4, num[5]]
+    with open('../polycraft_game/experiments/hgv1_1.json', 'w') as f:
+        f.write(json.dumps(setting))
+
 def dqn_unity(opt):
 
+    randomize(opt.domain_file)
+
     # environment
-    env = PolycraftHGEnv(domain_file=opt.domain_file, opt=opt)
+    env = PolycraftHGEnv(opt=opt)
     env = wrap_func(env)
 
     # agent
@@ -26,7 +45,7 @@ def dqn_unity(opt):
     losses = [] # list of losses
     score_window = deque(maxlen = 100) # a deque of 100 episode scores to average
     eps = opt.eps_start
-    state = env.reset()
+    state = env.reset(opt.domain_file)
     counter = 0
 
     # create figure
@@ -36,6 +55,9 @@ def dqn_unity(opt):
     
     # start training
     for i_episode in tqdm(range(1,opt.num_episodes+1)):
+
+        if i_episode % 1000 == 0:
+            randomize(opt.domain_file)
 
         print()
         
@@ -58,7 +80,7 @@ def dqn_unity(opt):
             # print('==========================')
             
             if done or counter % 250 == 0:
-                state = env.reset()
+                state = env.reset(opt.domain_file)
                 break
         scores.append(score)
         score_window.append(score)

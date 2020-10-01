@@ -14,16 +14,34 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 from collections import namedtuple,deque
+import json
 from config import Config
+
+def randomize(domain_file):
+
+    domain_file = domain_file[3:]
+    with open(domain_file, 'r') as f:
+        setting = json.load(f)
+    
+    num = [int(i) for i in np.random.randint(10, 30, 6)]
+    angle = int(np.random.randint(0, 360, 1)[0])
+    setting['features'][0]['pos'] = [num[0], 4, num[1]]
+    setting['features'][0]['lookDir'] = [0, angle, 0]
+    setting['features'][2]['pos'] = [num[2], 4, num[3]]
+    setting['features'][4]['blockList'][0]['blockPos'] = [num[4], 4, num[5]]
+    with open('../polycraft_game/experiments/hgv1_1.json', 'w') as f:
+        f.write(json.dumps(setting))
 
 def run(opt):
 
-    env = PolycraftHGEnv(domain_file=opt.domain_file, opt=opt)
+    # randomize(opt.domain_file)
+
+    env = PolycraftHGEnv(opt=opt)
     env = wrap_func(env)
 
     scores = []
     eps = 0.
-    state = env.reset()
+    state = env.reset(opt.domain_file)
     counter = 0                                 
     
     for i_episode in range(5):
@@ -41,7 +59,7 @@ def run(opt):
             state = next_state                             # roll over the state to next time step
             counter += 1
             if done or counter == 250:                     # exit loop if episode finished
-                state = env.reset()
+                state = env.reset(opt.domain_file)
                 break
         scores.append(score)
         #print("Score: {}".format(score))

@@ -28,10 +28,10 @@ class Config:
         self.UPDATE_EVERY = 4        # how often to update the network
 
         # path
-        #prefix = ''
-        prefix = '_BEST'
+        prefix = ''
+        #prefix = '_BEST'
         self.model_path = 'saved_model{}.pth'.format(prefix)
-        self.frame_path = 'saved_frames{}.pkl'.format(prefix)
+        self.frame_path = 'saved_frames{}.pkl'.format('_BEST') #'_BEST'
 
         self.is_recover = True       # whether to recover old buffer
 
