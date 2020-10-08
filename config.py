@@ -15,9 +15,9 @@ class Config:
         # environment
         self.state_size = 8
         self.num_episodes = 3000
-        self.eps_start = 1
+        self.eps_start = 0.3 # 1
         self.eps_decay=0.995
-        self.eps_end = 0.01
+        self.eps_end = 0.1 #0.01
 
         # agent
         self.buffer_size = int(1e5)  # replay buffer size

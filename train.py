@@ -54,10 +54,12 @@ def dqn_unity(opt):
     ewma = lambda x, span=100: DataFrame({'x':np.asarray(x)}).x.ewm(span=span).mean().values
     
     # start training
+    dones = 0
     for i_episode in tqdm(range(1,opt.num_episodes+1)):
 
-        if i_episode % 1000 == 0:
+        if i_episode % 1000 == 0 or dones == 100:
             randomize(opt.domain_file)
+            dones = 0
 
         print()
         
@@ -81,6 +83,7 @@ def dqn_unity(opt):
             
             if done or counter % 250 == 0:
                 state = env.reset(opt.domain_file)
+                dones += 1
                 break
         scores.append(score)
         score_window.append(score)
