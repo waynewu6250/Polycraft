@@ -9,9 +9,12 @@ import os
 
 from PolycraftEnv import PolycraftHGEnv
 from wrapper import wrap_func
-from model import QNetwork
-from Agent import Agent
 from config import Config
+
+# from model import QNetwork
+# from Agent import Agent
+from model_pixel import QNetwork
+from Agent_pixel import Agent
 
 def randomize(domain_file):
 
@@ -38,7 +41,7 @@ def dqn_unity(opt):
     env = wrap_func(env)
 
     # agent
-    agent = Agent(state_size = opt.state_size, action_size = opt.action_Size, seed = 0, opt=opt)
+    agent = Agent(num_input_chnl = opt.num_input_chnl, action_size = opt.action_Size, seed = 0, opt=opt)
     
     # parameters
     scores = [] # list of scores from each episode
@@ -64,8 +67,8 @@ def dqn_unity(opt):
         score = 0
         aloss = 0
         while True:
-            
-            action = agent.select_act(state,eps)           # select an action
+            aug_state = agent.augment_state(state)
+            action = agent.select_act(aug_state,eps)           # select an action
             next_state, reward, done, info = env.step(action)
             loss = agent.step(state,action,reward,next_state,done)
             if loss:
@@ -97,7 +100,8 @@ def dqn_unity(opt):
             torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
         if np.mean(score_window)>=99.5:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoints/saved_model_local.pth')
+            torch.save(agent.qnetwork_target.state_dict(), 'checkpoints/saved_model_local.pth')
         
         # Create figure
         plt.cla()
@@ -114,7 +118,7 @@ def dqn_unity(opt):
         plt.title("Training Losses"); plt.grid(); plt.legend()
 
         plt.pause(0.005)
-        plt.savefig('score.png')
+        plt.savefig('results/score.png')
     
     plt.ioff()
             

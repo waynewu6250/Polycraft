@@ -10,10 +10,11 @@ class Config:
         
         elif self.mode == 'single':
             self.domain_file = '../experiments/hgv1_1.json'
-            self.action_Size = 3
+            self.action_Size = 4
 
         # environment
         self.state_size = 8
+        self.num_input_chnl = 11
         self.num_episodes = 3000
         self.eps_start = 1
         self.eps_decay=0.995
@@ -26,12 +27,14 @@ class Config:
         self.TAU = 1e-3              # for soft update of target parameters
         self.LR = 5e-4               # learning rate 
         self.UPDATE_EVERY = 4        # how often to update the network
+        self.REGULARIZATION = 1e-4   # regularization parameter
 
         # path
         prefix = ''
         #prefix = '_BEST'
-        self.model_path = 'saved_model{}.pth'.format(prefix)
-        self.frame_path = 'saved_frames{}.pkl'.format('_BEST') #'_BEST'
+        self.local_model_path = 'checkpoints/saved_model_local{}.pth'.format(prefix)
+        self.target_model_path = 'checkpoints/saved_model_target{}.pth'.format(prefix)
+        self.frame_path = 'checkpoints/saved_frames{}.pkl'.format('_BEST') #'_BEST'
 
         self.is_recover = True       # whether to recover old buffer
 
