@@ -6,6 +6,7 @@ from pandas import DataFrame
 import torch
 import json
 import os
+import pickle
 
 from PolycraftEnv import PolycraftHGEnv
 from wrapper import wrap_func
@@ -58,9 +59,12 @@ def dqn_unity(opt):
     
     # start training
     dones = 0
+    success_turning = torch.load('success_turning.pth') if os.path.exists('success_turning.pth') else []
     for i_episode in tqdm(range(1,opt.num_episodes+1)):
 
         if i_episode % 1000 == 0 or dones == 100:
+            if dones == 100:
+                success_turning.append(i_episode)
             randomize(opt.domain_file)
             dones = 0
 
@@ -86,7 +90,8 @@ def dqn_unity(opt):
             
             if done or counter % 250 == 0:
                 state = env.reset(opt.domain_file)
-                dones += 1
+                if done:
+                    dones += 1
                 break
         scores.append(score)
         score_window.append(score)
@@ -94,17 +99,20 @@ def dqn_unity(opt):
             losses.append(aloss)
         eps = max(opt.eps_end, opt.eps_decay*eps) # decrease epsilon
         
-        if i_episode % 1 == 0:
+        if i_episode % 20 == 0:
             print('\rAverage Score: {:.2f}'.format(np.mean(score_window)))
             # sanity check
             for param in agent.qnetwork_local.parameters():
                 print(param[0][0][0])
                 break
-            torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
+            torch.save(agent.qnetwork_local.state_dict(), opt.local_model_path)
+            torch.save(agent.qnetwork_target.state_dict(), opt.target_model_path)
+            torch.save(success_turning, 'success_turning.pth')
+            with open(opt.buffer_path, "wb") as mf:
+                mem_to_save = deque(list(agent.memory.memory)[-50000:], maxlen=100000) #agent.memory.memory
+                pickle.dump(mem_to_save, mf, pickle.HIGHEST_PROTOCOL)
         if np.mean(score_window)>=99.5:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoints/saved_model_local.pth')
-            torch.save(agent.qnetwork_target.state_dict(), 'checkpoints/saved_model_local.pth')
         
         # Create figure
         plt.cla()
@@ -122,6 +130,8 @@ def dqn_unity(opt):
 
         plt.pause(0.005)
         plt.savefig('results/score.png')
+        print(success_turning)
+        print(eps)
     
     plt.ioff()
             

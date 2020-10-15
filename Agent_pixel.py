@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 from collections import namedtuple,deque
+import pickle
 
 from model_pixel import QNetwork
 
@@ -15,7 +16,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, num_input_chnl, action_size, seed):
+    def __init__(self, num_input_chnl, action_size, seed, opt):
         """Initialize an Agent object.
         
         Params
@@ -35,22 +36,28 @@ class Agent():
         self.qnetwork_target = QNetwork(num_input_chnl, action_size, seed).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=self.opt.LR, weight_decay=self.opt.REGULARIZATION)
 
+        # Replay memory
+        self.memory = ReplayBuffer(action_size, opt.buffer_size, opt.batch_size, seed)
+        # Initialize time step (for updating every UPDATE_EVERY steps)
+        self.t_step = 0
+
         # Load model
-        if os.path.exists(opt.model_path):
+        if os.path.exists(opt.local_model_path):
             print('Load pretrained model...')
-            self.qnetwork_local.load_state_dict(torch.load(opt.local_model_path,        map_location=lambda storage, loc: storage))
+            self.qnetwork_local.load_state_dict(torch.load(opt.local_model_path, map_location=lambda storage, loc: storage))
             self.qnetwork_target.load_state_dict(torch.load(opt.target_model_path, map_location=lambda storage, loc: storage))
+            if opt.buffer_path:
+                with open(opt.buffer_path, "rb") as mf:
+                    self.memory.memory = pickle.load(mf)
             # sanity check
             for param in self.qnetwork_local.parameters():
                 print(param[0][0][0])
                 break
+            
         else:
             print('Train from scratch...')
 
-        # Replay memory
-        self.memory = ReplayBuffer(action_size, seed, opt)
-        # Initialize time step (for updating every UPDATE_EVERY steps)
-        self.t_step = 0
+        
     
     def select_act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
