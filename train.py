@@ -50,7 +50,6 @@ def dqn_unity(opt):
     score_window = deque(maxlen = 100) # a deque of 100 episode scores to average
     eps = opt.eps_start
     state = env.reset(opt.domain_file)
-    counter = 0
 
     # create figure
     plt.figure(figsize=(6,3), dpi=80)
@@ -62,9 +61,10 @@ def dqn_unity(opt):
     success_turning = torch.load('success_turning.pth') if os.path.exists('success_turning.pth') else []
     for i_episode in tqdm(range(1,opt.num_episodes+1)):
 
-        if i_episode % 1000 == 0 or dones == 100:
+        if i_episode % 300 == 0 or dones == 100:
             if dones == 100:
-                success_turning.append(i_episode)
+                success_turning.append(i_episode+822+1589+141+1408+1650+\
+                                        842+2446+1171+2533+811+1579+847+2387+2493+2492+2414+2392+1640)
             randomize(opt.domain_file)
             dones = 0
 
@@ -72,6 +72,7 @@ def dqn_unity(opt):
         
         score = 0
         aloss = 0
+        counter = 0
         while True:
             aug_state = agent.augment_state(state)
             action = agent.select_act(aug_state,eps)           # select an action
@@ -88,7 +89,7 @@ def dqn_unity(opt):
             # print('Current Step: ', counter)
             # print('==========================')
             
-            if done or counter % 250 == 0:
+            if done or counter == 250:
                 state = env.reset(opt.domain_file)
                 if done:
                     dones += 1
@@ -119,8 +120,8 @@ def dqn_unity(opt):
         plt.subplot(1,2,1)
         if scores != []:
             plt.cla()
-            plt.plot(scores, label='rewards')
-            plt.plot(ewma(np.array(scores),span=10), marker='.', label='rewards ewma@1000')
+            plt.scatter(range(len(scores)), scores, label='rewards', s=5)
+            #plt.plot(ewma(np.array(scores),span=10), marker='.', label='rewards ewma@1000')
             plt.title("Session rewards"); plt.grid(); plt.legend()
         
         plt.subplot(1,2,2)

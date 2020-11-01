@@ -58,10 +58,9 @@ def run(opt):
 
     scores = []
     eps = 0.1
-    state = env.reset(opt.domain_file)
-    counter = 0                                 
+    state = env.reset(opt.domain_file)                                 
     dones = 0
-    for i_episode in range(1,51):
+    for i_episode in range(1,201):
         
         randomize(opt.domain_file)
         print()
@@ -69,7 +68,7 @@ def run(opt):
         score = 0                                          # initialize the score
         # agent = Agent(state_size = opt.state_size, action_size = opt.action_Size, seed = 0, opt=opt)
         agent = Agent(num_input_chnl = opt.num_input_chnl, action_size = opt.action_Size, seed = 0, opt=opt)
-        
+        counter = 0
         while True:
             # action = agent.select_act(state,eps)           # select an action
             aug_state = agent.augment_state(state)
@@ -79,7 +78,7 @@ def run(opt):
             score += reward                                # update the score
             state = next_state                             # roll over the state to next time step
             counter += 1
-            if done or counter % 250 == 0:                     # exit loop if episode finished
+            if done or counter == 250:                     # exit loop if episode finished
                 state = env.reset(opt.domain_file)
                 if done:
                     dones += 1
@@ -88,7 +87,7 @@ def run(opt):
         print('Success times: {}/{}'.format(dones, i_episode))
         #print("Score: {}".format(score))
     print('Avg score:',np.mean(scores))
-    print('Success rate: ',dones/50)
+    print('Success rate: ',dones/200)
 
 if __name__ == '__main__':
     import argparse
