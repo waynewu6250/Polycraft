@@ -64,7 +64,7 @@ def dqn_unity(opt):
         if i_episode % 300 == 0 or dones == 100:
             if dones == 100:
                 success_turning.append(i_episode+822+1589+141+1408+1650+\
-                                        842+2446+1171+2533+811+1579+847+2387+2493+2492+2414+2392+1640)
+                                        842+2446+1171+2533+811+1579+847+2387+2493+2492+2414+2392+1640+1323+498+1872)
             randomize(opt.domain_file)
             dones = 0
 

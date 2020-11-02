@@ -30,7 +30,7 @@ class Config:
         self.REGULARIZATION = 1e-4   # regularization parameter
 
         # path
-        prefix = ''
+        prefix = '_5'
         #prefix = '_BEST'
         self.local_model_path = 'checkpoints/saved_model_local{}.pth'.format(prefix)
         self.target_model_path = 'checkpoints/saved_model_target{}.pth'.format(prefix)
