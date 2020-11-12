@@ -14,10 +14,11 @@ class Config:
 
         # environment
         self.state_size = 8
+        self.num_input_chnl = 11
         self.num_episodes = 3000
-        self.eps_start = 1
+        self.eps_start = 0.1
         self.eps_decay=0.995
-        self.eps_end = 0.01
+        self.eps_end = 0.1
 
         # agent
         self.buffer_size = int(1e5)  # replay buffer size
@@ -26,12 +27,15 @@ class Config:
         self.TAU = 1e-3              # for soft update of target parameters
         self.LR = 5e-4               # learning rate 
         self.UPDATE_EVERY = 4        # how often to update the network
+        self.REGULARIZATION = 1e-4   # regularization parameter
 
         # path
-        prefix = ''
+        prefix = '_5'
         #prefix = '_BEST'
-        self.model_path = 'saved_model{}.pth'.format(prefix)
-        self.frame_path = 'saved_frames{}.pkl'.format('_BEST') #'_BEST'
+        self.local_model_path = 'checkpoints/saved_model_local{}.pth'.format(prefix)
+        self.target_model_path = 'checkpoints/saved_model_target{}.pth'.format(prefix)
+        self.buffer_path = 'checkpoints/saved_buffer{}.pkl'.format('') #'_BEST'
+        self.frame_path = 'checkpoints/saved_frames{}.pkl'.format('_BEST') #'_BEST'
 
         self.is_recover = True       # whether to recover old buffer
 

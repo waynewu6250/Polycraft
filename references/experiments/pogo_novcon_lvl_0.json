@@ -1,0 +1,18 @@
+{
+	"seed":0,
+	"templatePath":"experiments/pogo.json",
+	"novelties":[
+		{
+			"blockName": "minecraft:crafting_table",
+			"type": "WorldGenTransform",
+			"seedOverride":-1,
+			"intensity":20
+		},
+		{
+			"blockName": "tree",
+			"type": "WorldGenTransform",
+			"seedOverride":-1,
+			"intensity":20
+		}
+	]
+}
