@@ -1,0 +1,168 @@
+{
+  "features": [
+    {
+      "pos": [
+        3,
+        4,
+        6
+      ],
+      "name": "Start 0",
+      "color": -16711681,
+      "type": "START",
+      "canProceed": false,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        3,
+        4,
+        6
+      ],
+      "lookDir": [
+        0,
+        270,
+        0
+      ],
+      "dim": 0,
+      "spawnedInServer": false,
+      "spawnedInClient": false,
+      "spawnRand": false
+    },
+    {
+      "pos": [
+        0,
+        4,
+        0
+      ],
+      "name": "map",
+      "color": -256,
+      "type": "DATA",
+      "canProceed": true,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        15,
+        4,
+        15
+      ],
+      "data": " "
+    },
+    {
+      "pos": [
+        10,
+        4,
+        12
+      ],
+      "name": "dest",
+      "color": -256,
+      "type": "DATA",
+      "canProceed": true,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        10,
+        4,
+        12
+      ],
+      "data": " "
+    },
+    {
+      "pos": [
+        45,
+        4,
+        10
+      ],
+      "name": "render1",
+      "color": -256,
+      "type": "DATA",
+      "canProceed": true,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        50,
+        64,
+        15
+      ],
+      "data": "render"
+    },
+    {
+      "pos": [
+        41,
+        4,
+        36
+      ],
+      "name": "render2",
+      "color": -256,
+      "type": "DATA",
+      "canProceed": true,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        47,
+        40,
+        40
+      ],
+      "data": "render"
+    },
+	{
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "name": "End Condition",
+      "color": -256,
+      "type": "END",
+      "canProceed": true,
+      "isDone": false,
+      "completionTime": 0,
+      "uuid": "db3e5cd8-6749-11ea-bc55-0242ac130003",
+	  "endCondition": "BLOCK_TO_LOCATION",
+	  "itemToAcquire": "",
+	  "blockToPlace": "polycraft:macguffin",
+	  "locationToReach": [
+						10,
+						4,
+						12
+						],
+	  "endTime": 0,
+	  "endStepCost": 0,
+	  "isFinished": false
+    },
+    {
+      "pos": [
+        16,
+        6,
+        17
+      ],
+      "name": "Guide 4",
+      "color": -256,
+      "type": "GUIDE",
+      "canProceed": false,
+      "isDone": false,
+      "completionTime": 0,
+      "pos2": [
+        16,
+        6,
+        17
+      ]
+    }
+  ],
+  "options": {
+    "pos": [
+      0,
+      0,
+      0
+    ],
+    "pos2": [
+      14,
+      10,
+      14
+    ],
+    "name": "",
+    "numTeams": 1,
+    "teamSize": 1,
+    "seed": 0,
+    "hideGui": true,
+    "outputScreen": true
+  }
+}

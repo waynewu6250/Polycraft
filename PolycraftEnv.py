@@ -42,7 +42,6 @@ class PolycraftHGEnv:
         else:
             self.action_names = [
                 'move w',   # forward
-                'move x',   # backward
                 'turn -45', # turn left
                 'turn 45']  # turn right
     

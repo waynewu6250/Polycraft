@@ -6,6 +6,7 @@ from pandas import DataFrame
 import torch
 import json
 import os
+import pickle
 
 from PolycraftEnv import PolycraftHGEnv
 from wrapper import wrap_func
@@ -49,7 +50,6 @@ def dqn_unity(opt):
     score_window = deque(maxlen = 100) # a deque of 100 episode scores to average
     eps = opt.eps_start
     state = env.reset(opt.domain_file)
-    counter = 0
 
     # create figure
     plt.figure(figsize=(6,3), dpi=80)
@@ -57,15 +57,22 @@ def dqn_unity(opt):
     ewma = lambda x, span=100: DataFrame({'x':np.asarray(x)}).x.ewm(span=span).mean().values
     
     # start training
+    dones = 0
+    success_turning = torch.load('success_turning.pth') if os.path.exists('success_turning.pth') else []
     for i_episode in tqdm(range(1,opt.num_episodes+1)):
 
-        if i_episode % 1000 == 0:
+        if i_episode % 300 == 0 or dones == 100:
+            if dones == 100:
+                success_turning.append(i_episode+822+1589+141+1408+1650+\
+                                        842+2446+1171+2533+811+1579+847+2387+2493+2492+2414+2392+1640+1323+498+1872)
             randomize(opt.domain_file)
+            dones = 0
 
         print()
         
         score = 0
         aloss = 0
+        counter = 0
         while True:
             aug_state = agent.augment_state(state)
             action = agent.select_act(aug_state,eps)           # select an action
@@ -82,8 +89,10 @@ def dqn_unity(opt):
             # print('Current Step: ', counter)
             # print('==========================')
             
-            if done or counter % 250 == 0:
+            if done or counter == 250:
                 state = env.reset(opt.domain_file)
+                if done:
+                    dones += 1
                 break
         scores.append(score)
         score_window.append(score)
@@ -91,25 +100,28 @@ def dqn_unity(opt):
             losses.append(aloss)
         eps = max(opt.eps_end, opt.eps_decay*eps) # decrease epsilon
         
-        if i_episode % 1 == 0:
+        if i_episode % 20 == 0:
             print('\rAverage Score: {:.2f}'.format(np.mean(score_window)))
             # sanity check
             for param in agent.qnetwork_local.parameters():
                 print(param[0][0][0])
                 break
-            torch.save(agent.qnetwork_local.state_dict(), 'saved_model.pth')
+            torch.save(agent.qnetwork_local.state_dict(), opt.local_model_path)
+            torch.save(agent.qnetwork_target.state_dict(), opt.target_model_path)
+            torch.save(success_turning, 'success_turning.pth')
+            with open(opt.buffer_path, "wb") as mf:
+                mem_to_save = deque(list(agent.memory.memory)[-50000:], maxlen=100000) #agent.memory.memory
+                pickle.dump(mem_to_save, mf, pickle.HIGHEST_PROTOCOL)
         if np.mean(score_window)>=99.5:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode, np.mean(score_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoints/saved_model_local.pth')
-            torch.save(agent.qnetwork_target.state_dict(), 'checkpoints/saved_model_local.pth')
         
         # Create figure
         plt.cla()
         plt.subplot(1,2,1)
         if scores != []:
             plt.cla()
-            plt.plot(scores, label='rewards')
-            plt.plot(ewma(np.array(scores),span=10), marker='.', label='rewards ewma@1000')
+            plt.scatter(range(len(scores)), scores, label='rewards', s=5)
+            #plt.plot(ewma(np.array(scores),span=10), marker='.', label='rewards ewma@1000')
             plt.title("Session rewards"); plt.grid(); plt.legend()
         
         plt.subplot(1,2,2)
@@ -119,6 +131,8 @@ def dqn_unity(opt):
 
         plt.pause(0.005)
         plt.savefig('results/score.png')
+        print(success_turning)
+        print(eps)
     
     plt.ioff()
             

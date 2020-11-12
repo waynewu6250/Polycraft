@@ -4,6 +4,7 @@ import gym
 from gym import spaces
 from PIL import Image
 import matplotlib.pyplot as plt
+import cv2
 
 from PolycraftEnv import PolycraftHGEnv
 
@@ -56,14 +57,15 @@ class ProcessFrame:
         img_array = np.reshape(img_array, (256, 256, 3))
         img_array = np.flip(img_array, 0)
         img = np.flip(img_array, 2)
-        # plt.imshow(img_array, interpolation='none')
+        img = cv2.resize(img, (84, 84), interpolation=cv2.INTER_AREA)
+        # plt.imshow(img, interpolation='none')
         # plt.show()
-        img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
-        img = Image.fromarray(img)
-        resized_screen = img.resize((84, 110), Image.BILINEAR)
-        resized_screen = np.array(resized_screen)
-        x_t = resized_screen[18:102, :]
-        x_t = np.reshape(x_t, [84, 84, 1])
+        # img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
+        # img = Image.fromarray(img)
+        # resized_screen = img.resize((84, 110), Image.BILINEAR)
+        # resized_screen = np.array(resized_screen)
+        # x_t = resized_screen[18:102, :]
+        x_t = np.reshape(img, [1, 3, 84, 84])
         # plt.imshow(x_t.squeeze(2))
         # plt.show()
         return x_t.astype(np.uint8)
