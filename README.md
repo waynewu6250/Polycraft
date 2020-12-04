@@ -1,6 +1,7 @@
 # Polycraft
 Train an AI agent to play hunter-gatherer game in Polycraft simulation environment, based on Minecraft. <br>
-\<Train with Target Deep Q-Network and different random initial locations for player and MacGuffin\>
+* Train with Target Deep Q-Network.
+* Train with different random initial locations for player and MacGuffin.
 
 ![](gif.gif)
 
